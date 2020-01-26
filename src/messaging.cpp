@@ -1,61 +1,36 @@
-#include <sstream>
-
 #include "messaging.h"
-#include "config.h"
 #include "MAD_ESP32.h"
-#include "danfoss_rx.h"
 
-MQTTClient mqtt_client(128);
+MQTTClient mqtt_client(256);
 
-uint16_t messages_since_restart = 0;
-
-void SetupMQTT()
+void SetupMQTT(const char *mqtt_broker)
 {
-    mqtt_client.begin(config.mqtt_broker, board.wifi_client);
-    LOGLN("MQTT init done.");
-
-    if (!mqtt_client.connected()) {
-        LOG("Connecting to MQTT.");
-        while (!mqtt_client.connect(config.mqtt_client_id)) {
-            LOG(".");
-            delay(1000);
-        }
-        LOG(" CONNECTED.\n");
-    }
+    mqtt_client.begin(mqtt_broker, board.wifi_client);
+    LOGLNT("MQTT init done.");
 }
 
-void LogData(const uint16_t thermostat_id, const uint8_t command_key)
+bool ConnectMQTT(const char *client_id)
 {
-    int16_t command = 0;
+    LOGT("Connecting to MQTT.");
 
-    switch(command_key) {
-        case DanfossRX::command_off:
-            command = 0;
-        break;
-        case DanfossRX::command_on:
-            command = 1;
-        break;
-        case DanfossRX::command_learn:
-            command = 2;
-        break;
-        default:
-            command = -1;
-        break;
+    uint64_t time_ms = millis();
+    while (!mqtt_client.connect(client_id)) {
+        if (millis() >= time_ms + 10 * 1000) {
+            return false;
+        }
+        LOG(".");
+        delay(500);
     }
 
-    std::ostringstream messageStream;
+    LOGLN(" CONNECTED.");
+    return true;
+}
 
-    messageStream << "{";
-    messageStream << "\"thermostat_id\":" << thermostat_id;
-    messageStream << ",\"command\":" << command;
-    messageStream << ",\"messages_since_restart\":" << ++messages_since_restart;
-    messageStream << "}";
+bool PublishMessage(const char* mqtt_topic, const char* message)
+{
+    LOGT("Publishing to MQTT.");
+    bool result = mqtt_client.publish(mqtt_topic, message, false, 2);
+    LOGLN(" PUBLISHED with status %d.", mqtt_client.lastError());
 
-    if (mqtt_client.publish(config.mqtt_topic, messageStream.str().c_str(), false, 2)) {
-        Serial.printf("Message #%d published to MQTT. Last error: %d.\n", messages_since_restart, mqtt_client.lastError());
-    } else {
-        Serial.printf("Error: %d.RESTARTING.\n", mqtt_client.lastError());
-        Serial.flush();
-        ESP.restart();
-    }
+    return result;
 }

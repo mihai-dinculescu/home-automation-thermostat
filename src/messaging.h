@@ -5,6 +5,7 @@
 
     extern MQTTClient mqtt_client;
 
-    void SetupMQTT();
-    void LogData(const uint16_t thermostat_id, const uint8_t command_key);
+    void SetupMQTT(const char *mqtt_broker);
+    bool ConnectMQTT(const char *client_id);
+    bool PublishMessage(const char* mqtt_topic, const char* message);
 #endif

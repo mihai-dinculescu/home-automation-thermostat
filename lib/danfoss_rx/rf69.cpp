@@ -15,14 +15,13 @@
  **/
 static SPISettings rf69_spi_settings(4000000, MSBFIRST, SPI_MODE0);
 
-void Radio::rf69_init(uint8_t sync_len, uint8_t recv_packet_len, const uint8_t *sync_val, uint8_t sync_tol)
+bool Radio::rf69_init(uint8_t sync_len, uint8_t recv_packet_len, const uint8_t *sync_val, uint8_t sync_tol)
 {
 	pinMode(pin_rst, OUTPUT);
 	digitalWrite(pin_rst, LOW);
 
 	if (!rf69.init()) {
-		Serial.println("RFM69 radio init failed");
-		while (1);
+		return false;
 	}
 	rf69.setTxPower(20, true);
 
@@ -70,7 +69,7 @@ void Radio::rf69_init(uint8_t sync_len, uint8_t recv_packet_len, const uint8_t *
 	rf69.setOpMode(RH_RF69_OPMODE_MODE_RX);
 	ATOMIC_BLOCK_END;
 
-	Serial.println("RFM69 radio init OK!");
+	return true;
 }
 
 bool Radio::rf69_receiveDone(uint8_t *out, uint8_t *sz)

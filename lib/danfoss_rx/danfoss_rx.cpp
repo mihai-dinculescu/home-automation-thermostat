@@ -5,7 +5,11 @@ const uint8_t DanfossRX::sync_val[] = { 0x6c, 0xb6, 0xcb, 0x2c, 0x92, 0xd9 };
 DanfossRX::DanfossRX(uint8_t rfm69_cs, uint8_t rfm69_int, uint8_t rfm69_rst): rfm69_cs(rfm69_cs), rfm69_int(rfm69_int), rfm69_rst(rfm69_rst)
 {
     radio = new Radio(rfm69_cs, rfm69_int, rfm69_rst);
-    radio->rf69_init(sizeof sync_val, 27, sync_val, 2);
+}
+
+bool DanfossRX::Init()
+{
+    return radio->rf69_init(sizeof sync_val, 27, sync_val, 2);
 }
 
 DanfossRX::~DanfossRX()
@@ -145,8 +149,7 @@ static void handle_command(const char *command)
 /* Build a line of input from serial, handling the command when it's done.
  * This avoids having a blocking readline call in loop(), which would
  * prevent us from receiving RF messages. */
-#define SERIAL_RXBUF_SZ 16
-char serial_rxbuf[SERIAL_RXBUF_SZ];
+char serial_rxbuf[16];
 uint8_t serial_rxpos = 0;
 static void handle_serial_char(char c)
 {

@@ -18,8 +18,8 @@
         public:
             const Pins pins;
             WiFiClient wifi_client;
-            void SetupWifi(const char *ssid, const char *password);
-            void SetupTime();
+            bool SetupWifi(const char *ssid, const char *password);
+            bool SetupTime();
             int64_t GetTimestamp();
             void FatalError();
             void DeepSleep(uint16_t seconds);
@@ -30,6 +30,9 @@
 
     extern Board board;
 
+    #define LOGT(fmt, ...) (Serial.printf("%09llu: " fmt, board.GetTimestamp(), ##__VA_ARGS__))
     #define LOG(fmt, ...) (Serial.printf(fmt, ##__VA_ARGS__))
-    #define LOGLN(fmt, ...) (Serial.printf("%09llu: " fmt "\n", board.GetTimestamp(), ##__VA_ARGS__))
+
+    #define LOGLN(fmt, ...) (Serial.printf(fmt "\n", ##__VA_ARGS__))
+    #define LOGLNT(fmt, ...) (Serial.printf("%09llu: " fmt "\n", board.GetTimestamp(), ##__VA_ARGS__))
 #endif

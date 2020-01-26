@@ -24,6 +24,7 @@
             static const uint8_t command_off= 0xcc;
             static const uint8_t command_learn= 0x77;
 
+            bool Init();
             bool receiveDone(uint16_t *thermostat_id, uint8_t *command);
             DanfossRX(uint8_t rfm69_cs, uint8_t rfm69_int, uint8_t rfm69_rst);
             ~DanfossRX();

@@ -1,11 +1,6 @@
 #include <sys/time.h>
-#include "config.h"
 
 #include "MAD_ESP32.h"
-
-#ifdef CAPABILITIES_SD
-    #include "logging.h"
-#endif
 
 int64_t Board::GetTimestamp()
 {
@@ -14,55 +9,47 @@ int64_t Board::GetTimestamp()
     return (tv.tv_sec * 1000LL + (tv.tv_usec / 1000LL));
 }
 
-void Board::SetupWifi(const char *ssid, const char *password)
+bool Board::SetupWifi(const char *ssid, const char *password)
 {
-    LOG("Connecting to %s.", ssid);
+    LOGT("Connecting to %s.", ssid);
     WiFi.begin(ssid, password);
 
     uint64_t time_ms = millis();
     while (WiFi.status() != WL_CONNECTED) {
         if (millis() >= time_ms + 30 * 1000) {
-            #ifdef CAPABILITIES_SD
-                LogRestart("WiFi connect timeout.");
-            #endif
-
-            LOGLN("RESTARTING.");
-            Serial.flush();
-            Board::DeepSleep(10);
+            return false;
         }
         LOG(".");
         delay(500);
     }
 
-    LOG(" CONNECTED.\n");
+    LOGLN(" CONNECTED.");
+    return true;
 }
 
-void Board::SetupTime()
+bool Board::SetupTime()
 {
     configTime(0, 0, "pool.ntp.org", "time.windows.com", "time.nist.gov");
     struct tm time_info;
 
-    LOG("Getting time.");
-    uint16_t retries = 0;
+    LOGT("Getting time.");
+    uint16_t retries = 1;
     while (!getLocalTime(&time_info)) {
-        if (retries >= 1) {
-            #ifdef CAPABILITIES_SD
-                LogRestart("Time fetch timeout.");
-            #endif
-
-            LOGLN("RESTARTING.");
-            Serial.flush();
-            Board::DeepSleep(10);
+        if (retries >= 3) {
+            return false;
         }
+
         configTime(0, 0, "pool.ntp.org", "time.windows.com", "time.nist.gov");
-        retries++;
+
         LOG(".");
+        retries++;
     }
 
     char datetime_buffer[128];
     strftime(datetime_buffer, sizeof(datetime_buffer), "%A, %B %d %Y %H:%M:%S", &time_info);
 
-    LOG(" Current time is: %s.\n", datetime_buffer);
+    LOGLN(" Current time is: %s.", datetime_buffer);
+    return true;
 }
 
 void Board::BlinkErrorLed(uint16_t interval)
@@ -84,7 +71,7 @@ void Board::FatalError()
 void Board::DeepSleep(uint16_t seconds)
 {
     uint64_t time_us = seconds * 1000 * 1000ull - esp_timer_get_time();
-    LOGLN("Deep sleep for %llu ms!", time_us / 1000);
+    LOGLNT("Deep sleep for %llu ms!", time_us / 1000);
     esp_sleep_enable_timer_wakeup(time_us);
     esp_deep_sleep_start();
 }

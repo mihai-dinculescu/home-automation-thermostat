@@ -5,6 +5,7 @@
 
     class DanfossRX
     {
+        static const unsigned char thermostat_packet[];
         static const uint8_t sync_val[];
 
         /* Note that these positions applied to packets with the sync word included,
@@ -25,12 +26,15 @@
             static const uint8_t command_learn= 0x77;
 
             bool Init();
-            bool receiveDone(uint16_t *thermostat_id, uint8_t *command);
+            void IssueCommand(char command, unsigned int thermid);
+            bool ReceiveDone(uint16_t *thermostat_id, uint8_t *command);
             DanfossRX(uint8_t rfm69_cs, uint8_t rfm69_int, uint8_t rfm69_rst);
             ~DanfossRX();
 
         private:
-            static void decode_3b(const uint8_t *in, uint8_t *out, size_t outsz);
+            static void MakeDanfossPacket(uint8_t *out, unsigned int thermid, uint8_t cmd);
+            static void Encode3b(const uint8_t *in, uint8_t *out, size_t insz);
+            static void Decode3b(const uint8_t *in, uint8_t *out, size_t outsz);
             DanfossRX() {}
     };
 #endif

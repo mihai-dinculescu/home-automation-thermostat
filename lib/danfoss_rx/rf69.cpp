@@ -121,8 +121,9 @@ void Radio::rf69_transmit(const uint8_t *data, size_t len, bool no_sync)
 
 	/* Transition to transmit state, then poll for transmission complete */
 	rf69.setOpMode(RH_RF69_OPMODE_MODE_TX);
-	while (!(rf69.spiRead(RH_RF69_REG_28_IRQFLAGS2) & 8 /* PacketSent */))
-	;
+	while (!(rf69.spiRead(RH_RF69_REG_28_IRQFLAGS2) & 8 /* PacketSent */)) {
+		delay(100);
+	}
 
 	/* Re-enable sync word? */
 	if (no_sync) {

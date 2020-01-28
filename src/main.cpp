@@ -2,29 +2,26 @@
 #include <iostream>
 #include <string>
 
-#include "danfoss_rx.h"
-
 #include "config.h"
 #include "MAD_ESP32.h"
 #include "messaging.h"
+#include "thermostat.h"
+#include "sensor_temperature.h"
 
-DanfossRX *danfoss_rx;
-uint16_t messages_since_restart = 0;
+Thermostat *thermostat;
+RTC_DATA_ATTR bool previously_run = false;
 
-const char* GenerateMessage(const uint16_t thermostat_id, const uint8_t command_key)
+const char* GenerateMessage(const uint16_t thermostat_id, const char command_key)
 {
     int16_t command = 0;
     std::ostringstream messageStream;
 
     switch(command_key) {
-        case DanfossRX::command_off:
+        case 'X':
             command = 0;
         break;
-        case DanfossRX::command_on:
+        case 'O':
             command = 1;
-        break;
-        case DanfossRX::command_learn:
-            command = 2;
         break;
         default:
             command = -1;
@@ -34,7 +31,8 @@ const char* GenerateMessage(const uint16_t thermostat_id, const uint8_t command_
     messageStream << "{";
     messageStream << "\"thermostat_id\":" << thermostat_id;
     messageStream << ",\"command\":" << command;
-    messageStream << ",\"messages_since_restart\":" << ++messages_since_restart;
+    messageStream << ",\"temperature_current\":" << thermostat->GetTemperatureCurrent();
+    messageStream << ",\"temperature_target\":" << thermostat->GetTemperatureTarget();
     messageStream << "}";
 
     std::string messageString = messageStream.str();
@@ -67,6 +65,13 @@ void setup()
     Serial.begin(115200);
     while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
+    if (sensor_temperature.Setup()) {
+        LOGLNT("Temperature sensor init OK.");
+    } else {
+        LOGLNT("Temperature sensor init failed!");
+        board.FatalError();
+    }
+
     if (!board.SetupWifi(config.wifi_ssid, config.wifi_password)) {
         Restart("WiFi connect timeout.");
     }
@@ -79,43 +84,50 @@ void setup()
 
     SetupMQTT(config.mqtt_broker);
 
-    danfoss_rx = new DanfossRX(*config.rfm69_cs, *config.rfm69_int, *config.rfm69_rst);
-    if (danfoss_rx->Init()) {
+    thermostat = new Thermostat(previously_run, config.rfm69_cs, config.rfm69_int, config.rfm69_rst);
+
+    if (thermostat->Init()) {
 	    LOGLNT("RFM69 radio init OK.");
     } else {
 		LOGLNT("RFM69 radio init failed!");
 		board.FatalError();
     }
 
-    LOGLNT("Danfoss thermostat transceiver");
+    LOGLNT("Danfoss thermostat transceiver init OK.");
 }
 
 void loop()
 {
-    #ifdef TRANSMIT
-        while (Serial.available() > 0) {
-            int val = Serial.read();
-            if (val >= 0) {
-                handle_serial_char((char)val);
-            }
-        }
-    #endif
-
     mqtt_client.loop();
     delay(10);
 
-    uint16_t thermostat_id;
-    uint8_t command;
+    bool started = thermostat->HandleThermostat();
 
-    if (danfoss_rx->receiveDone(&thermostat_id, &command)) {
+    if (started) {
         if (!ConnectMQTT(config.mqtt_client_id)) {
             Restart("MQTT connect timeout.");
         }
 
-        const char* message = GenerateMessage(thermostat_id, command);
+        const char* message = GenerateMessage(config.thermostat_id, 'O');
 
         if (!PublishMessage(config.mqtt_topic, message)) {
             Restart("MQTT publish failed.");
         }
+
+        previously_run = true;
+        board.DeepSleep(2 * 60);
+    } else {
+        if (!ConnectMQTT(config.mqtt_client_id)) {
+            Restart("MQTT connect timeout.");
+        }
+
+        const char* message = GenerateMessage(config.thermostat_id, 'X');
+
+        if (!PublishMessage(config.mqtt_topic, message)) {
+            Restart("MQTT publish failed.");
+        }
+
+        previously_run = false;
+        board.DeepSleep(5 * 60);
     }
 }

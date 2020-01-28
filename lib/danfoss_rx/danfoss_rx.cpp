@@ -17,7 +17,7 @@ DanfossRX::~DanfossRX()
     free(radio);
 }
 
-void DanfossRX::decode_3b(const uint8_t *in, uint8_t *out, size_t outsz)
+void DanfossRX::Decode3b(const uint8_t *in, uint8_t *out, size_t outsz)
 {
     unsigned int i;
     memset(out, 0, outsz);
@@ -28,14 +28,14 @@ void DanfossRX::decode_3b(const uint8_t *in, uint8_t *out, size_t outsz)
     }
 }
 
-bool DanfossRX::receiveDone(uint16_t *thermostat_id, uint8_t *command) {
+bool DanfossRX::ReceiveDone(uint16_t *thermostat_id, uint8_t *command) {
     uint8_t data[30];
     uint8_t data_sz = sizeof data;
 
     if (radio->rf69_receiveDone(data, &data_sz)) {
         uint8_t decoded[9];
 
-        decode_3b(data, decoded, 9);
+        Decode3b(data, decoded, 9);
 
         /* Now decode it: check for message consistency */
         if (decoded[3] != 0xAA ||
@@ -67,13 +67,12 @@ bool DanfossRX::receiveDone(uint16_t *thermostat_id, uint8_t *command) {
     return false;
 }
 
-#ifdef TRANSMIT
 /*
  * Packet definition and construction
  */
-const static unsigned char thermostat_packet[] = {  0xAA, 0xDD, 0x46, 0x00, 0x00, 0x00 };
+const unsigned char DanfossRX::thermostat_packet[] = {  0xAA, 0xDD, 0x46, 0x00, 0x00, 0x00 };
 
-static void encode_3b(const uint8_t *in, uint8_t *out, size_t insz)
+void DanfossRX::Encode3b(const uint8_t *in, uint8_t *out, size_t insz)
 {
     unsigned int i;
     memset(out, 0, insz * 3);
@@ -88,81 +87,25 @@ static void encode_3b(const uint8_t *in, uint8_t *out, size_t insz)
 }
 
 /* out must be an array of length at least 3 * (sizeof thermostat_packet) */
-static void mk_danfoss_packet(uint8_t *out, unsigned int thermid, uint8_t cmd)
+void DanfossRX::MakeDanfossPacket(uint8_t *out, unsigned int thermid, uint8_t cmd)
 {
     uint8_t packet[sizeof thermostat_packet];
     memcpy(packet, thermostat_packet, sizeof packet);
-    packet[THERMOSTAT_ID1_POS] = thermid & 0xff;
-    packet[THERMOSTAT_ID2_POS] = (thermid & 0xff00) >> 8;
-    packet[COMMAND_POS] = cmd;
-    encode_3b(packet, out, sizeof packet);
-}
-
-/*
- * Command interface
- */
-
-static const char *strcmd(char cmd)
-{
-    switch (cmd) {
-        case 'O': return "ON";
-        case 'X': return "OFF";
-        case 'L': return "LEARN";
-        default:  return "UNKNOWN";
-    }
+    packet[thermostat_id1_pos] = thermid & 0xff;
+    packet[thermostat_id2_pos] = (thermid & 0xff00) >> 8;
+    packet[command_pos] = cmd;
+    Encode3b(packet, out, sizeof packet);
 }
 
 /* Command is O for on, X for off, L for learn. */
-static void issue_command(char command, unsigned int thermid)
+void DanfossRX::IssueCommand(char command, unsigned int thermid)
 {
     uint8_t packet[6 * sizeof thermostat_packet];
-    uint8_t packet_cmd = command == 'O' ? COMMAND_ON
-                        : command == 'X' ? COMMAND_OFF
-                        : command == 'L' ? COMMAND_LEARN : 0;
-    mk_danfoss_packet(packet, thermid, packet_cmd);
+    uint8_t packet_cmd = command == 'O' ? command_on
+                        : command == 'X' ? command_off
+                        : command == 'L' ? command_learn : 0;
+    MakeDanfossPacket(packet, thermid, packet_cmd);
     /* Transmit two copies back-to-back */
     memcpy(&packet[3 * sizeof thermostat_packet], packet, 3 * sizeof thermostat_packet);
-    rf69_transmit(packet, sizeof packet, true);
+    radio->rf69_transmit(packet, sizeof packet, true);
 }
-
-static void handle_command(const char *command)
-{
-    long thermostat_id;
-
-    switch (toupper(command[0])) {
-        case 'O': /* on */
-        case 'X': /* off */
-        case 'L': /* learn */
-        thermostat_id = strtol(&command[1], NULL, 16);
-        if (thermostat_id > 0 && thermostat_id < 0xffff) {
-            /* valid thermostat ID, issue the command */
-            Serial.print("ISSUE 0x");
-            Serial.print(thermostat_id, HEX);
-            Serial.print(" ");
-            Serial.println(strcmd(toupper(command[0])));
-            issue_command(toupper(command[0]), thermostat_id);
-        }
-        break;
-    }
-}
-
-/* Build a line of input from serial, handling the command when it's done.
- * This avoids having a blocking readline call in loop(), which would
- * prevent us from receiving RF messages. */
-char serial_rxbuf[16];
-uint8_t serial_rxpos = 0;
-static void handle_serial_char(char c)
-{
-    if (serial_rxpos < SERIAL_RXBUF_SZ) {
-        serial_rxbuf[serial_rxpos++] = c == '\n' ? '\0' : c;
-        if (c == '\n') {
-            handle_command(serial_rxbuf);
-        }
-    }
-
-    /* Command-delimination character always resets command state */
-    if (c == '\n') {
-        serial_rxpos = 0;
-    }
-}
-#endif

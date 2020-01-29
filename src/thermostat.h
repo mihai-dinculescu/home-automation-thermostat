@@ -7,7 +7,6 @@
     {
         DanfossRX *danfoss_rx;
         bool previously_run;
-        uint16_t hour;
         float temperature_current;
         float temperature_target;
 
@@ -17,6 +16,7 @@
             bool HandleThermostat();
             float GetTemperatureCurrent();
             float GetTemperatureTarget();
+            uint32_t GetSleepTime();
 
         private:
             bool ShouldStart();

@@ -49,17 +49,6 @@ void Restart(const char *message)
     ESP.restart();
 }
 
-void WiFiEventHandler(WiFiEvent_t event)
-{
-    switch (event) {
-        case SYSTEM_EVENT_STA_DISCONNECTED:
-            Restart("WiFi disconnected.");
-            break;
-        default:
-            break;
-    }
-}
-
 void setup()
 {
     Serial.begin(115200);
@@ -75,8 +64,6 @@ void setup()
     if (!board.SetupWifi(config.wifi_ssid, config.wifi_password)) {
         Restart("WiFi connect timeout.");
     }
-
-    WiFi.onEvent(WiFiEventHandler);
 
     if (!board.SetupTime()) {
         Restart("Time fetch timeout.");
@@ -98,36 +85,14 @@ void setup()
 
 void loop()
 {
-    mqtt_client.loop();
-    delay(10);
+    bool should_start = thermostat->HandleThermostat();
 
-    bool started = thermostat->HandleThermostat();
-
-    if (started) {
-        if (!ConnectMQTT(config.mqtt_client_id)) {
-            Restart("MQTT connect timeout.");
-        }
-
-        const char* message = GenerateMessage(config.thermostat_id, 'O');
-
-        if (!PublishMessage(config.mqtt_topic, message)) {
-            Restart("MQTT publish failed.");
-        }
-
-        previously_run = true;
-        board.DeepSleep(2 * 60);
-    } else {
-        if (!ConnectMQTT(config.mqtt_client_id)) {
-            Restart("MQTT connect timeout.");
-        }
-
-        const char* message = GenerateMessage(config.thermostat_id, 'X');
-
-        if (!PublishMessage(config.mqtt_topic, message)) {
-            Restart("MQTT publish failed.");
-        }
-
-        previously_run = false;
-        board.DeepSleep(5 * 60);
+    if (ConnectMQTT(config.mqtt_client_id)) {
+        const char* message = GenerateMessage(config.thermostat_id, should_start ? 'O': 'X');
+        PublishMessage(config.mqtt_topic, message);
     }
+
+    previously_run = should_start;
+
+    board.DeepSleep(thermostat->GetSleepTime());
 }

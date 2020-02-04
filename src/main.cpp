@@ -70,7 +70,7 @@ void setup()
         Restart("Time fetch timeout.");
     }
 
-    SetupMQTT(config.mqtt_broker);
+    messaging.Setup(config.mqtt_broker);
 
     config_remote.Read(config.config_url);
     uint16_t enabled = config_remote.GetField1();
@@ -97,9 +97,9 @@ void loop()
 {
     bool should_start = thermostat->HandleThermostat();
 
-    if (ConnectMQTT(config.mqtt_client_id)) {
+    if (messaging.Connect(config.mqtt_client_id)) {
         const char* message = GenerateMessage(config.thermostat_id, should_start ? 'O': 'X');
-        PublishMessage(config.mqtt_topic, message);
+        messaging.Publish(config.mqtt_topic, message);
     }
 
     previously_run = should_start;

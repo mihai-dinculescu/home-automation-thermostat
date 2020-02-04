@@ -3,9 +3,17 @@
 
     #include <MQTT.h>
 
-    extern MQTTClient mqtt_client;
+    class Messaging
+    {
+        MQTTClient _client;
 
-    void SetupMQTT(const char *mqtt_broker);
-    bool ConnectMQTT(const char *client_id);
-    bool PublishMessage(const char* mqtt_topic, const char* message);
+        public:
+            Messaging(uint16_t bufSize = 128): _client(bufSize) {};
+            void Setup(const char *mqtt_broker);
+            bool Connect(const char *client_id);
+            bool Publish(const char* mqtt_topic, const char* message);
+            bool Loop();
+    };
+
+    extern Messaging messaging;
 #endif

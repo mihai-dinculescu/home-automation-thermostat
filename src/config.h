@@ -20,6 +20,8 @@
         const uint16_t       *rfm69_int              = &board.pins.P21;
 
         const uint16_t       thermostat_id           = config_secrets.thermostat_id;
+
+        const char           *config_url             = config_secrets.config_url;
     };
 
     extern Config config;

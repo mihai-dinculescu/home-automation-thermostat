@@ -1,7 +1,8 @@
 #include "thermostat.h"
 #include "sensor_temperature.h"
 
-Thermostat::Thermostat(bool previously_run, const uint16_t *rfm69_cs, const uint16_t *rfm69_int, const uint16_t *rfm69_rst): previously_run(previously_run)
+Thermostat::Thermostat(bool enabled, bool previously_run, const uint16_t *rfm69_cs, const uint16_t *rfm69_int, const uint16_t *rfm69_rst)
+    : enabled(enabled), previously_run(previously_run)
 {
     danfoss_rx = new DanfossRX(*config.rfm69_cs, *config.rfm69_int, *config.rfm69_rst);
 
@@ -30,29 +31,33 @@ float Thermostat::GetTemperatureTarget()
 
 float Thermostat::CalculateTargetTemperature()
 {
-    time_t currentTime = time(NULL);
-    struct tm *localTime = localtime(&currentTime);
+    if (enabled) {
+        time_t currentTime = time(NULL);
+        struct tm *localTime = localtime(&currentTime);
 
-    uint16_t month = localTime->tm_mon + 1;
-    uint16_t hour = localTime->tm_hour;
+        uint16_t month = localTime->tm_mon + 1;
+        uint16_t hour = localTime->tm_hour;
 
-    LOGLNT("Month: %.2d", month);
-    LOGLNT("Hour: %.2d", hour);
+        LOGLNT("Month: %.2d", month);
+        LOGLNT("Hour: %.2d", hour);
 
-    // default target - night time
-    float target = 21.5;
+        // default target - night time
+        float target = 21.5;
 
-    // day time
-    if (hour >= 7 && hour < 21) {
-        target = 22.5;
+        // day time
+        if (hour >= 7 && hour < 21) {
+            target = 22.5;
+        }
+
+        // warm period adjustment
+        if (month >= 3 && month < 10) {
+            target -= 1;
+        }
+
+        return target;
     }
 
-    // warm period adjustment
-    if (month >= 3 && month < 10) {
-        target -= 1;
-    }
-
-    return target;
+    return 5;
 }
 
 bool Thermostat::ShouldStart()

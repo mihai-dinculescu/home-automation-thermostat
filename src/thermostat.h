@@ -6,12 +6,13 @@
     class Thermostat
     {
         DanfossRX *danfoss_rx;
+        bool enabled;
         bool previously_run;
         float temperature_current;
         float temperature_target;
 
         public:
-            Thermostat(bool previously_run, const uint16_t *rfm69_cs, const uint16_t *rfm69_int, const uint16_t *rfm69_rst);
+            Thermostat(bool enabled, bool previously_run, const uint16_t *rfm69_cs, const uint16_t *rfm69_int, const uint16_t *rfm69_rst);
             bool Init();
             bool HandleThermostat();
             float GetTemperatureCurrent();

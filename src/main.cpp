@@ -3,6 +3,7 @@
 #include <string>
 
 #include "config.h"
+#include "config_remote.h"
 #include "MAD_ESP32.h"
 #include "messaging.h"
 #include "thermostat.h"
@@ -71,7 +72,16 @@ void setup()
 
     SetupMQTT(config.mqtt_broker);
 
-    thermostat = new Thermostat(previously_run, config.rfm69_cs, config.rfm69_int, config.rfm69_rst);
+    config_remote.Read(config.config_url);
+    uint16_t enabled = config_remote.GetField1();
+
+    if (enabled == 1) {
+        LOGLNT("Thermostat is ENABLED.");
+    } else {
+        LOGLNT("Thermostat is DISABLED.");
+    }
+
+    thermostat = new Thermostat(enabled, previously_run, config.rfm69_cs, config.rfm69_int, config.rfm69_rst);
 
     if (thermostat->Init()) {
 	    LOGLNT("RFM69 radio init OK.");

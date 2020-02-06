@@ -1,15 +1,15 @@
-#ifndef SENSORS_BME280_H
-    #define SENSORS_BME280_H
+#ifndef SENSOR_TEMPERATURE_H
+    #define SENSOR_TEMPERATURE_H
 
-    #include <Adafruit_BME280.h>
+    #include <Adafruit_MCP9808.h>
 
     class SensorTmperature
     {
-        Adafruit_BME280 bme;
+        Adafruit_MCP9808 _sensor;
 
         public:
             bool Setup();
-            float ReadTemperature();
+            float Read();
     };
 
     extern SensorTmperature sensor_temperature;

@@ -6,7 +6,7 @@ Thermostat::Thermostat(bool enabled, bool previously_run, const uint16_t *rfm69_
 {
     danfoss_rx = new DanfossRX(*config.rfm69_cs, *config.rfm69_int, *config.rfm69_rst);
 
-    temperature_current = sensor_temperature.ReadTemperature();
+    temperature_current = sensor_temperature.Read();
     temperature_target = CalculateTargetTemperature();
     LOGLNT("Current Temperature: %.2f", temperature_current);
     LOGLNT("Target Temperature: %.2f", temperature_target);

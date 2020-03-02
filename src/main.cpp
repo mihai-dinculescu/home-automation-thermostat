@@ -8,6 +8,7 @@
 #include "messaging.h"
 #include "thermostat.h"
 #include "sensor_temperature.h"
+#include "sensor_rtc.h"
 
 Thermostat *thermostat;
 RTC_DATA_ATTR bool previously_run = false;
@@ -66,7 +67,7 @@ void setup()
         Restart("WiFi connect timeout.");
     }
 
-    if (!board.SetupTime()) {
+    if (!sensor_rtc.Setup()) {
         Restart("Time fetch timeout.");
     }
 

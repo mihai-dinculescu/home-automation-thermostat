@@ -8,3 +8,4 @@ More settings can be changed in `config.h`.
 - BME280
 - Adafruit MicroSD Card Breakout Board
 - Adafruit RFM69HCW Transceiver Radio Breakout - 433 MHz
+- Adafruit DS3231 Precision RTC Breakout

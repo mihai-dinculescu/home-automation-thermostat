@@ -100,12 +100,11 @@ void DanfossRX::MakeDanfossPacket(uint8_t *out, unsigned int thermid, uint8_t cm
 /* Command is O for on, X for off, L for learn. */
 void DanfossRX::IssueCommand(char command, unsigned int thermid)
 {
-    uint8_t packet[6 * sizeof thermostat_packet];
+    uint8_t packet[3 * sizeof thermostat_packet];
     uint8_t packet_cmd = command == 'O' ? command_on
                         : command == 'X' ? command_off
                         : command == 'L' ? command_learn : 0;
     MakeDanfossPacket(packet, thermid, packet_cmd);
-    /* Transmit two copies back-to-back */
-    memcpy(&packet[3 * sizeof thermostat_packet], packet, 3 * sizeof thermostat_packet);
+
     radio->rf69_transmit(packet, sizeof packet, true);
 }

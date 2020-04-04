@@ -39,7 +39,7 @@ bool Board::SetupTime()
             return false;
         }
 
-        configTime(0, 0, "pool.ntp.org", "time.windows.com", "time.nist.gov");
+        configTime(0, 3600, "pool.ntp.org", "time.windows.com", "time.nist.gov");
 
         LOG(".");
         retries++;

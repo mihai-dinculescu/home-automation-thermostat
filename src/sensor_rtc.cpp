@@ -7,14 +7,23 @@ bool SensorRTC::Setup()
         return false;
     }
 
-    if (_sensor.lostPower()) {
-        LOGLNT("RTC lost power.");
+    if (_sensor.lostPower() || _sensor.alarmFired(1)) {
+        if (_sensor.lostPower()) {
+            LOGLNT("RTC lost power.");
+        } else {
+            LOGLNT("RTC refresh alarm fired.");
+        }
 
         if (!board.SetupTime()) {
             return false;
         }
 
+        // set sensor datetime
         _sensor.adjust(DateTime(board.GetTimestamp() / 1000));
+
+        // set alarm for when next to update the time from NTP
+        _sensor.clearAlarm(1);
+        _sensor.setAlarm1(_sensor.now() + TimeSpan(1, 0, 0, 0), Ds3231Alarm1Mode::DS3231_A1_Minute);
     } else {
         LOGT("Setting time from RTC.");
 

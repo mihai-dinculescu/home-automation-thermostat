@@ -29,7 +29,7 @@ bool Board::SetupWifi(const char *ssid, const char *password)
 
 bool Board::SetupTime()
 {
-    configTime(0, 0, "pool.ntp.org", "time.windows.com", "time.nist.gov");
+    configTime(0, 3600, "pool.ntp.org", "time.windows.com", "time.nist.gov");
     struct tm time_info;
 
     LOGT("Getting time.");

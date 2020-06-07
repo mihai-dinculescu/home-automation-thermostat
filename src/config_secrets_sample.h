@@ -9,8 +9,7 @@
 
         const uint16_t     thermostat_id         = 0;
 
-        // update at https://api.thingspeak.com/update?api_key=<api_key>&field1=<value>
-        const char*        config_url            = "https://api.thingspeak.com/channels/<channel_id>/feeds.json?api_key=<api_key>&results=1";
+        const char         *config_key           = "<key>";
     };
 
     extern ConfigSecrets config_secrets;

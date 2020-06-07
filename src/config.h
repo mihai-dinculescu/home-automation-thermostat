@@ -21,7 +21,12 @@
 
         const uint16_t       thermostat_id           = config_secrets.thermostat_id;
 
-        const char           *config_url             = config_secrets.config_url;
+        // update at http://192.168.1.100:8080/playground
+        // by running
+        // mutation{setThermostatStatus(data:{status: true}){id,status,timestamp}}
+        // more info: https://github.com/mihai-dinculescu/home-automation-config
+        const char           *config_url             = "http://192.168.1.100:8080/graphql?query={thermostatStatus{id,status}}";
+        const char           *config_key             = config_secrets.config_key;
     };
 
     extern Config config;

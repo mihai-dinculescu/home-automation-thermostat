@@ -73,8 +73,8 @@ void setup()
 
     messaging.Setup(config.mqtt_broker);
 
-    config_remote.Read(config.config_url);
-    uint16_t enabled = config_remote.GetField1();
+    config_remote.Read(config.config_key, config.config_url);
+    uint16_t enabled = config_remote.GetStatus();
 
     if (enabled == 1) {
         LOGLNT("Thermostat is ENABLED.");

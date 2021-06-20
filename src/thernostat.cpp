@@ -26,31 +26,32 @@ float Thermostat::GetTemperatureCurrent()
 float Thermostat::GetTemperatureTarget()
 {
     return temperature_target;
-
 }
 
 float Thermostat::CalculateTargetTemperature()
 {
-    if (enabled) {
+    if (enabled)
+    {
         time_t currentTime = time(NULL);
         struct tm *localTime = localtime(&currentTime);
 
-        uint16_t month = localTime->tm_mon + 1;
         uint16_t hour = localTime->tm_hour;
+        uint16_t month = localTime->tm_mon;
 
-        LOGLNT("Month: %.2d", month);
         LOGLNT("Hour: %.2d", hour);
 
         // default target - night time
         float target = 21.5;
 
         // day time
-        if (hour >= 7 && hour < 21) {
-            target = 22.5;
+        if (hour >= 7 && hour < 21)
+        {
+            target += 1;
         }
 
         // warm period adjustment
-        if (month >= 3 && month < 10) {
+        if (month >= 4 && month < 10)
+        {
             target -= 1;
         }
 
@@ -62,11 +63,13 @@ float Thermostat::CalculateTargetTemperature()
 
 bool Thermostat::ShouldStart()
 {
-    if (previously_run && temperature_target >= temperature_current + 0.2) {
+    if (previously_run && temperature_target >= temperature_current + 0.2)
+    {
         return true;
     }
 
-    if (!previously_run && temperature_target >= temperature_current) {
+    if (!previously_run && temperature_target >= temperature_current)
+    {
         return true;
     }
 
@@ -75,13 +78,16 @@ bool Thermostat::ShouldStart()
 
 bool Thermostat::HandleThermostat()
 {
-    if (ShouldStart()) {
+    if (ShouldStart())
+    {
         LOGLNT("Thermostat should START.");
 
         danfoss_rx->IssueCommand('O', config.thermostat_id);
 
         return true;
-    } else {
+    }
+    else
+    {
         LOGLNT("Thermostat should STOP.");
 
         danfoss_rx->IssueCommand('X', config.thermostat_id);
@@ -92,7 +98,8 @@ bool Thermostat::HandleThermostat()
 
 uint32_t Thermostat::GetSleepTime()
 {
-    if (previously_run || ShouldStart()) {
+    if (previously_run || ShouldStart())
+    {
         return 2 * 60;
     }
 

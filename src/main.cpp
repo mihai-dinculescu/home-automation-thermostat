@@ -13,20 +13,21 @@
 Thermostat *thermostat;
 RTC_DATA_ATTR bool previously_run = false;
 
-const char* GenerateMessage(const uint16_t thermostat_id, const char command_key)
+const char *GenerateMessage(const uint16_t thermostat_id, const char command_key)
 {
     int16_t command = 0;
     std::ostringstream messageStream;
 
-    switch(command_key) {
-        case 'X':
-            command = 0;
+    switch (command_key)
+    {
+    case 'X':
+        command = 0;
         break;
-        case 'O':
-            command = 1;
+    case 'O':
+        command = 1;
         break;
-        default:
-            command = -1;
+    default:
+        command = -1;
         break;
     }
 
@@ -38,7 +39,7 @@ const char* GenerateMessage(const uint16_t thermostat_id, const char command_key
     messageStream << "}";
 
     std::string messageString = messageStream.str();
-    const char* messageChar = messageString.c_str();
+    const char *messageChar = messageString.c_str();
 
     return messageChar;
 }
@@ -54,20 +55,28 @@ void Restart(const char *message)
 void setup()
 {
     Serial.begin(115200);
-    while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+    while (!Serial)
+    {
+        delay(1);
+    } // wait until serial console is open, remove if not tethered to computer
 
-    if (sensor_temperature.Setup()) {
+    if (sensor_temperature.Setup())
+    {
         LOGLNT("Temperature sensor init OK.");
-    } else {
+    }
+    else
+    {
         LOGLNT("Temperature sensor init failed!");
         board.FatalError();
     }
 
-    if (!board.SetupWifi(config.wifi_ssid, config.wifi_password)) {
+    if (!board.SetupWifi(config.wifi_ssid, config.wifi_password))
+    {
         Restart("WiFi connect timeout.");
     }
 
-    if (!sensor_rtc.Setup()) {
+    if (!sensor_rtc.Setup())
+    {
         Restart("Time fetch timeout.");
     }
 
@@ -76,19 +85,25 @@ void setup()
     config_remote.Read(config.config_key, config.config_url);
     uint16_t enabled = config_remote.GetStatus();
 
-    if (enabled == 1) {
+    if (enabled == 1)
+    {
         LOGLNT("Thermostat is ENABLED.");
-    } else {
+    }
+    else
+    {
         LOGLNT("Thermostat is DISABLED.");
     }
 
     thermostat = new Thermostat(enabled, previously_run, config.rfm69_cs, config.rfm69_int, config.rfm69_rst);
 
-    if (thermostat->Init()) {
-	    LOGLNT("RFM69 radio init OK.");
-    } else {
-		LOGLNT("RFM69 radio init failed!");
-		board.FatalError();
+    if (thermostat->Init())
+    {
+        LOGLNT("RFM69 radio init OK.");
+    }
+    else
+    {
+        LOGLNT("RFM69 radio init failed!");
+        board.FatalError();
     }
 
     LOGLNT("Danfoss thermostat transceiver init OK.");
@@ -98,8 +113,9 @@ void loop()
 {
     bool should_start = thermostat->HandleThermostat();
 
-    if (messaging.Connect(config.mqtt_client_id)) {
-        const char* message = GenerateMessage(config.thermostat_id, should_start ? 'O': 'X');
+    if (messaging.Connect(config.mqtt_client_id))
+    {
+        const char *message = GenerateMessage(config.thermostat_id, should_start ? 'O' : 'X');
         messaging.Publish(config.mqtt_topic, message);
     }
 
